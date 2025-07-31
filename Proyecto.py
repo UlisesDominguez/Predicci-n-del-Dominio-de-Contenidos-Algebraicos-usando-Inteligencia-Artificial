@@ -83,7 +83,7 @@ with st.form("formulario"):
 if submit:
     # Codificación manual del campo Participación según tus categorías
     participacion_mapping = {"Baja":0, "Media":1, "Alta":2}
-    participacion_cod = participacion_mapping"participacion"
+    participacion_cod = participacion_mapping([participacion])
         
     entrada = pd.DataFrame([{
         'Ecuaciones': ecuaciones,
