@@ -44,7 +44,25 @@ x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_
 
 # Entrenar el modelo
 modelo = RandomForestClassifier(n_estimators=100, random_state=0)
-modelo.fit(x_train, y_train)
+# Antes de entrenar, limpia y convierte los datos
+x_train = x_train.copy()
+
+# Rellenar NaNs con la media de cada columna
+x_train = x_train.fillna(x_train.mean())
+
+# Convertir todas las columnas a numérico, forzando NaNs en caso de errores
+x_train = x_train.apply(pd.to_numeric, errors='coerce')
+
+# Eliminar filas que tengan NaNs en alguna columna (si quedan)
+x_train = x_train.dropna()
+
+# Asegurarte que y_train también esté en formato numérico
+y_train = pd.Series(y_train).astype('int')
+
+# Entrenamiento del modelo usando los valores NumPy
+modelo.fit(x_train.values, y_train)
+
+modelo.fit(x_train.values, y_train)
 score = modelo.score(x_test, y_test)
 
 st.subheader(f"Precisión del modelo: {score:.2f}")
