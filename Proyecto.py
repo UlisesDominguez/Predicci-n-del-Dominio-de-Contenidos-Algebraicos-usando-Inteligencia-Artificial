@@ -66,8 +66,6 @@ st.bar_chart(importancia_ds.set_index("Característica"))
 # Formulario para predicción
 st.subheader("Formulario de Predicción")
 with st.form("formulario"):
-    # Inserta aquí los inputs que corresponden a tu dataset
-    # Cambia los nombres según tus columnas
     ecuaciones = st.number_input("Cantidad de Ecuaciones Correctas", min_value=0, max_value=100, value=50)
     inecuaciones = st.number_input("Cantidad de Inecuaciones Correctas", min_value=0, max_value=100, value=50)
     matrices = st.number_input("Cantidad de Matrices Correctas", min_value=0, max_value=100, value=50)
@@ -76,15 +74,19 @@ with st.form("formulario"):
     tiempo_promedio = st.number_input("Tiempo Promedio por Pregunta (minutos)", min_value=0.0, max_value=20.0, value=5.0)
     preguntas_docente = st.slider("Preguntas al Docente (número)", min_value=0, max_value=20, value=5)
     calificacion_final = st.slider("Calificación Final", min_value=0.0, max_value=10.0, value=7.0)
-    # Agrega más inputs según las columnas de tu dataset
-
+    # Añadimos el selectbox para nivel de participación
+    participacion = st.selectbox(
+        "Nivel de Participación",
+        ("Baja", "Media", "Alta")
+    )
     submit = st.form_submit_button("Predecir")
 
 if submit:
-    # Codificación manual del campo Participación según tus categorías
-    participacion_mapping = {"Baja":0, "Media":1, "Alta":2}
+    # Mapear la participación a un valor numérico
+    participacion_mapping = {"Baja": 0, "Media": 1, "Alta": 2}
     participacion_cod = participacion_mapping[participacion]
-        
+    
+    # Crear el DataFrame de entrada con los datos ingresados
     entrada = pd.DataFrame([{
         'Ecuaciones': ecuaciones,
         'Inecuaciones': inecuaciones,
@@ -95,10 +97,10 @@ if submit:
         'Participacion': participacion_cod,
         'Preguntas_Al_Docente': preguntas_docente,
         'Calificacion_Final': calificacion_final
-            # agrega más columnas en base a tu dataset
-        }])
-        
-        # Asegúrate que las columnas en 'entrada' coincidan con las del dataset y el modelo
+        # Añade más columnas si tu dataset las requiere
+    }])
+    
+    # Asegúrate que los nombres de columnas en 'entrada' coincidan exactamente con los utilizados en tu entrenamiento
     pred = modelo.predict(entrada)[0]
     riesgo = {0: "No domina", 1: "Domina"}.get(pred, "Desconocido")
     prob = modelo.predict_proba(entrada)[0][pred]
