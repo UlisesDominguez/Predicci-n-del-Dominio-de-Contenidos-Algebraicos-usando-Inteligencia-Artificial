@@ -8,118 +8,94 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report, confusion_matrix
 
-# Mostrar o cargar los datos
+st.set_page_config(page_title="Predicción en Álgebra", layout="wide")
+
+# Cargar datos con cache
 @st.cache_data
 def cargar_datos():
-    # Cambia la ruta por donde tengas guardado tu CSV
-    ds = pd.read_csv("dataset_algebra.csv")
-    return ds
+    return pd.read_csv("dataset_algebra.csv")
 
-# Cargar los datos
+# Cargar dataset
 ds = cargar_datos()
 
 st.title("Predicción de Riesgo de Dominio en Temas de Álgebra")
-st.write("Vista previa de los datos:")
+st.write("Vista previa del dataset:")
 st.dataframe(ds.head())
 
-# Procesamiento de datos
+# Codificación
 ds_encode = ds.copy()
-
-# Asegúrate que las columnas 'Historial_Credito' y 'Nivel_Educacion' existan en tu dataset
-# y sea necesario codificarlas
 label_cols = ['Participacion', 'Domina_Algebra']
 le = LabelEncoder()
 for col in label_cols:
     ds_encode[col] = le.fit_transform(ds_encode[col])
 
-# Define tus variables predictoras y la variable objetivo
-# Cambia 'Riesgo_Financiero' por el nombre correcto de la columna en tu dataset
-x = ds_encode.drop("Domina_Algebra", axis=1)
+# Definir variables
+X = ds_encode.drop("Domina_Algebra", axis=1)
 y = ds_encode["Domina_Algebra"]
-# Si 'Riesgo_Financiero' aún no está codificada, también la codificamos
-y = LabelEncoder().fit_transform(y)
 
-# Dividir en entrenamiento y prueba
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
+# Convertir todas las columnas a numérico
+X = X.apply(pd.to_numeric, errors='coerce')
+X = X.fillna(X.mean())
 
-# Entrenar el modelo
+# División
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+
+# Entrenar modelo
 modelo = RandomForestClassifier(n_estimators=100, random_state=0)
-# Antes de entrenar, limpia y convierte los datos
-x_train = x_train.copy()
+modelo.fit(X_train, y_train)
 
-# Rellenar NaNs con la media de cada columna
-x_train = x_train.fillna(x_train.mean())
-
-# Convertir todas las columnas a numérico, forzando NaNs en caso de errores
-x_train = x_train.apply(pd.to_numeric, errors='coerce')
-
-# Eliminar filas que tengan NaNs en alguna columna (si quedan)
-x_train = x_train.dropna()
-
-# Asegurarte que y_train también esté en formato numérico
-y_train = pd.Series(y_train).astype('int')
-
-# Entrenamiento del modelo usando los valores NumPy
-modelo.fit(x_train.values, y_train)
-
-modelo.fit(x_train.values, y_train)
-score = modelo.score(x_test, y_test)
-
+# Evaluación
+score = modelo.score(X_test, y_test)
 st.subheader(f"Precisión del modelo: {score:.2f}")
 
 # Matriz de confusión
-y_pred = modelo.predict(x_test)
+y_pred = modelo.predict(X_test)
 mc = confusion_matrix(y_test, y_pred)
-st.subheader('Matriz de Confusión')
+st.subheader("Matriz de Confusión")
 fig, ax = plt.subplots()
-sns.heatmap(mc, annot=True, fmt='d', cmap='Blues', ax=ax)
+sns.heatmap(mc, annot=True, fmt="d", cmap="Blues", ax=ax)
 st.pyplot(fig)
 
-# Importancia de las características
+# Importancia de características
 importancias = modelo.feature_importances_
 st.subheader("Importancia de las características")
-importancia_ds = pd.DataFrame({"Característica": x.columns, "Importancia": importancias})
-st.bar_chart(importancia_ds.set_index("Característica"))
+st.bar_chart(pd.DataFrame({
+    "Característica": X.columns,
+    "Importancia": importancias
+}).set_index("Característica"))
 
-# Formulario para predicción
+# Formulario
 st.subheader("Formulario de Predicción")
 with st.form("formulario"):
-    ecuaciones = st.number_input("Cantidad de Ecuaciones Correctas", min_value=0, max_value=100, value=50)
-    inecuaciones = st.number_input("Cantidad de Inecuaciones Correctas", min_value=0, max_value=100, value=50)
-    matrices = st.number_input("Cantidad de Matrices Correctas", min_value=0, max_value=100, value=50)
-    determinantes = st.number_input("Cantidad de Determinantes Correctos", min_value=0, max_value=100, value=50)
-    intentos_promedio = st.number_input("Promedio de Intentos por Pregunta", min_value=1.0, max_value=10.0, value=3.0)
-    tiempo_promedio = st.number_input("Tiempo Promedio por Pregunta (minutos)", min_value=0.0, max_value=20.0, value=5.0)
-    preguntas_docente = st.slider("Preguntas al Docente (número)", min_value=0, max_value=20, value=5)
-    calificacion_final = st.slider("Calificación Final", min_value=0.0, max_value=10.0, value=7.0)
-    # Añadimos el selectbox para nivel de participación
-    participacion = st.selectbox(
-        "Nivel de Participación",
-        ("Baja", "Media", "Alta")
-    )
+    ecuaciones = st.number_input("Ecuaciones correctas", 0, 100, 50)
+    inecuaciones = st.number_input("Inecuaciones correctas", 0, 100, 50)
+    matrices = st.number_input("Matrices correctas", 0, 100, 50)
+    determinantes = st.number_input("Determinantes correctos", 0, 100, 50)
+    intentos_prom = st.number_input("Promedio de intentos", 1.0, 10.0, 3.0)
+    tiempo_prom = st.number_input("Tiempo promedio (min)", 0.0, 20.0, 5.0)
+    preguntas_docente = st.slider("Preguntas al docente", 0, 20, 5)
+    calificacion = st.slider("Calificación final", 0.0, 10.0, 7.0)
+    participacion = st.selectbox("Nivel de Participación", ["Baja", "Media", "Alta"])
     submit = st.form_submit_button("Predecir")
 
 if submit:
-    # Mapear la participación a un valor numérico
-    participacion_mapping = {"Baja": 0, "Media": 1, "Alta": 2}
-    participacion_cod = participacion_mapping[participacion]
-    
-    # Crear el DataFrame de entrada con los datos ingresados
+    participacion_map = {"Baja": 0, "Media": 1, "Alta": 2}
     entrada = pd.DataFrame([{
-        'Ecuaciones': ecuaciones,
-        'Inecuaciones': inecuaciones,
-        'Matrices': matrices,
-        'Determinantes': determinantes,
-        'Intentos_Promedio': intentos_promedio,
-        'Tiempo_Promedio': tiempo_promedio,
-        'Participacion': participacion_cod,
-        'Preguntas_Al_Docente': preguntas_docente,
-        'Calificacion_Final': calificacion_final
-        # Añade más columnas si tu dataset las requiere
+        "Ecuaciones": ecuaciones,
+        "Inecuaciones": inecuaciones,
+        "Matrices": matrices,
+        "Determinantes": determinantes,
+        "Intentos_Promedio": intentos_prom,
+        "Tiempo_Promedio": tiempo_prom,
+        "Participacion": participacion_map[participacion],
+        "Preguntas_Al_Docente": preguntas_docente,
+        "Calificacion_Final": calificacion
     }])
-    
-    # Asegúrate que los nombres de columnas en 'entrada' coincidan exactamente con los utilizados en tu entrenamiento
+
+    # Reordenar columnas según entrenamiento
+    entrada = entrada[X.columns]
+
     pred = modelo.predict(entrada)[0]
-    riesgo = {0: "No domina", 1: "Domina"}.get(pred, "Desconocido")
     prob = modelo.predict_proba(entrada)[0][pred]
-    st.success(f"El estudiante {riesgo} con una probabilidad de {prob:.2f}")
+    resultado = "Domina" if pred == 1 else "No domina"
+    st.success(f"El estudiante {resultado} con una probabilidad de {prob:.2f}")
