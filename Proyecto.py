@@ -6,8 +6,7 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import confusion_matrix, classification_report
-from sklearn.utils import resample
+from sklearn.metrics import confusion_matrix
 
 st.set_page_config(page_title="Predicción en Álgebra", layout="wide")
 
@@ -16,75 +15,49 @@ st.set_page_config(page_title="Predicción en Álgebra", layout="wide")
 def cargar_datos():
     return pd.read_csv("dataset_algebra.csv")
 
+# Dataset original
 ds = cargar_datos()
 st.title("Predicción de Dominio en Álgebra con IA")
 st.write("Vista previa del dataset:")
 st.dataframe(ds.head())
 
-# Mostrar distribución de clases original
-st.subheader("📌 Distribución original de la variable objetivo:")
-st.write(ds["Domina_Algebra"].value_counts())
-
-# Codificación
+# Codificación de columnas categóricas
 ds_encode = ds.copy()
 le = LabelEncoder()
-ds_encode["Participacion"] = le.fit_transform(ds_encode["Participacion"])
-ds_encode["Domina_Algebra"] = le.fit_transform(ds_encode["Domina_Algebra"])
+ds_encode['Participacion'] = le.fit_transform(ds_encode['Participacion'])
+ds_encode['Domina_Algebra'] = le.fit_transform(ds_encode['Domina_Algebra'])
 
-# Definir X y y
+# Variables predictoras y objetivo
 X = ds_encode.drop(["ID_Estudiante", "Domina_Algebra"], axis=1)
 y = ds_encode["Domina_Algebra"]
 
-# Convertir a numérico y rellenar NaNs
-X = X.apply(pd.to_numeric, errors="coerce").fillna(X.mean())
+# Limpieza de datos
+X = X.apply(pd.to_numeric, errors='coerce').fillna(X.mean())
 
-# 🔁 BALANCEO DE CLASES por sobremuestreo
-df_completo = pd.concat([X, y], axis=1)
-df_domina = df_completo[df_completo["Domina_Algebra"] == 1]
-df_no_domina = df_completo[df_completo["Domina_Algebra"] == 0]
-
-# Sobremuestreo de la clase minoritaria
-df_domina_upsampled = resample(
-    df_domina,
-    replace=True,
-    n_samples=len(df_no_domina),
-    random_state=42
-)
-
-df_balanceado = pd.concat([df_no_domina, df_domina_upsampled])
-
-# Separar X e y balanceados
-X = df_balanceado.drop("Domina_Algebra", axis=1)
-y = df_balanceado["Domina_Algebra"]
-
-# División
+# División de datos
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
 # Modelo
 modelo = RandomForestClassifier(n_estimators=100, random_state=0)
 modelo.fit(X_train, y_train)
 
-# Evaluación
-y_pred = modelo.predict(X_test)
+# Precisión
 score = modelo.score(X_test, y_test)
-
 st.subheader(f"🎯 Precisión del modelo: {score:.2f}")
-st.text("📈 Reporte de Clasificación:")
-st.text(classification_report(y_test, y_pred))
 
 # Matriz de Confusión
+y_pred = modelo.predict(X_test)
+mc = confusion_matrix(y_test, y_pred)
 st.subheader("📊 Matriz de Confusión")
 fig, ax = plt.subplots()
-sns.heatmap(confusion_matrix(y_test, y_pred), annot=True, fmt="d", cmap="Blues", ax=ax)
+sns.heatmap(mc, annot=True, fmt='d', cmap='Blues', ax=ax)
 st.pyplot(fig)
 
 # Importancia de características
 importancias = modelo.feature_importances_
 st.subheader("🔍 Importancia de las Características")
-st.bar_chart(pd.DataFrame({
-    "Característica": X.columns,
-    "Importancia": importancias
-}).set_index("Característica"))
+importancia_ds = pd.DataFrame({"Característica": X.columns, "Importancia": importancias})
+st.bar_chart(importancia_ds.set_index("Característica"))
 
 # Formulario de predicción
 st.subheader("📝 Formulario de Predicción")
@@ -101,7 +74,10 @@ with st.form("formulario"):
     submit = st.form_submit_button("Predecir")
 
 if submit:
+    # Mapeo de participación
     participacion_map = {"Baja": 0, "Media": 1, "Alta": 2}
+
+    # Crear entrada de predicción
     entrada = pd.DataFrame([{
         "Ecuaciones": ecuaciones,
         "Inecuaciones": inecuaciones,
@@ -114,7 +90,7 @@ if submit:
         "Calificacion_Final": calificacion
     }])
 
-    # Asegurar columnas completas y ordenadas
+    # Asegurar columnas coincidan
     for col in X.columns:
         if col not in entrada.columns:
             entrada[col] = 0
