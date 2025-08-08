@@ -1,8 +1,8 @@
 ID_Estudiante,Ecuaciones,Inecuaciones,Matrices,Determinantes,Intentos_Promedio,Tiempo_Promedio,Participacion,Preguntas_Al_Docente,Calificacion_Final,Domina_Algebra
-STD0001,51,56,62,95,2,11.4,52,0,6.6,Sí
-STD0002,92,16,85,63,2,10.54,70,0,6.4,Sí
-STD0003,14,85,1,97,1,11.21,0,0,4.9,No
-STD0004,71,89,87,88,3,2.11,57,7,8.3,Sí
+STD0001,51,56,62,95,2,11.4,52,0,6,Sí
+STD0002,92,16,85,63,2,10.54,70,0,7,Sí
+STD0003,14,85,1,97,1,11.21,0,0,4,No
+STD0004,71,89,87,88,3,2.11,57,7,8,Sí
 STD0005,60,43,71,9,1,4.83,89,2,45.75,No
 STD0006,20,24,10,20,4,10.6,86,10,18.5,No
 STD0007,82,16,63,45,1,8.29,89,0,51.5,No
